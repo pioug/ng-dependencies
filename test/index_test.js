@@ -118,4 +118,9 @@ describe('lookup', function () {
     lookup(source);
   });
 
+  it('should not crash on JSX syntax', function () {
+    var source = 'var el = <div>${product}</div>';
+    lookup(source);
+  });
+
 });
