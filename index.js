@@ -1,79 +1,90 @@
-'use strict';
+"use strict";
 
-var babylon = require('babylon');
-var traverse = require('babel-traverse');
-var _ = require('lodash');
+const babylon = require("babylon");
+const traverse = require("babel-traverse");
+const _ = require("lodash");
 
-function parseOptions(opts) {
-  var defaultOpts = {
-    // default options
-  };
-  return _.merge(defaultOpts, (opts || {}));
-}
+function findDependencies(source) {
+  const potentialModuleNameVariable = {};
+  const modules = {};
+  const rootDeps = [];
 
-function findDependencies(source, opts) {
-  opts = parseOptions(opts);
-
-  var potentialModuleNameVariable = {};
-  var rootDeps = [];
-  var modules = {};
-
-  traverse.default(babylon.parse(source, {sourceType: 'module', plugins: ['jsx']}), {
-    exit: function({ node, parent }) {
-      if (canBeModuleNameVariableDeclaration(node)) {
-        potentialModuleNameVariable[node.id.name] = node.init.value;
-      }
-
-      if (!isAngularModuleStatement(node)) {
-        if (isNgModuleDeclaration(node)) {
-          modules['ng'] = [];
+  traverse.default(
+    babylon.parse(source, {
+      plugins: ["jsx"],
+      sourceType: "module"
+    }),
+    {
+      exit: function({ node, parent }) {
+        if (canBeModuleNameVariableDeclaration(node)) {
+          potentialModuleNameVariable[node.id.name] = node.init.value;
         }
-        return;
-      }
 
-      var moduleNameArg = parent.arguments[0];
-      var moduleName = moduleNameArg.value || potentialModuleNameVariable[moduleNameArg.name];
-      if (parent.arguments[1]) {
-        // if already declared, will reset dependencies, like how angular behaves (latest declaration wins)
-        modules[moduleName] = _.map(parent.arguments[1].elements, 'value');
-      } else {
-        rootDeps.push(moduleName);
+        if (!isAngularModuleStatement(node)) {
+          if (isNgModuleDeclaration(node)) {
+            modules["ng"] = [];
+          }
+          return;
+        }
+
+        const moduleNameArg = parent.arguments[0];
+        const moduleName =
+          moduleNameArg.value ||
+          potentialModuleNameVariable[moduleNameArg.name];
+        if (parent.arguments[1]) {
+          // if already declared, will reset dependencies, like how angular behaves (latest declaration wins)
+          modules[moduleName] = _.map(parent.arguments[1].elements, "value");
+        } else {
+          rootDeps.push(moduleName);
+        }
       }
     }
-  });
+  );
 
-  var moduleKeys = _.keys(modules);
-  var moduleValues = _.values(modules);
+  const moduleKeys = _.keys(modules);
+  const moduleValues = _.values(modules);
 
-  // aggregates all root + sub depedencies, and remove ones that were declared locally
-  rootDeps = _(rootDeps).union(_.flatten(moduleValues)).uniq().value();
-  rootDeps = _.difference(rootDeps, moduleKeys);
+  // aggregates all root + sub dependencies, and remove ones that were declared locally
+  const dependencies = _(rootDeps)
+    .union(_.flatten(moduleValues))
+    .uniq()
+    .difference(moduleKeys)
+    .value();
 
-  var isAngular = moduleKeys.length > 0 || rootDeps.length > 0;
-  if (isAngular && !_.has(modules, 'ng') && !_.some(rootDeps, 'ng')) {
-    rootDeps.unshift('ng');
+  const isAngular = moduleKeys.length > 0 || dependencies.length > 0;
+  if (isAngular && !_.has(modules, "ng") && !_.some(dependencies, "ng")) {
+    dependencies.unshift("ng");
   }
 
-  var ret = {
-    dependencies: rootDeps,
-    modules: modules
+  return {
+    dependencies,
+    modules
   };
-
-  return ret;
 }
 
 function isAngularModuleStatement(node) {
-  return node.type === 'MemberExpression' && node.object.name === 'angular' && node.property.name === 'module';
+  return (
+    node.type === "MemberExpression" &&
+    node.object.name === "angular" &&
+    node.property.name === "module"
+  );
 }
 
 function isNgModuleDeclaration(node) {
-  return node.type === 'CallExpression' && node.callee.name === 'angularModule' && node.arguments.length > 0 && node.arguments[0].value === 'ng';
+  return (
+    node.type === "CallExpression" &&
+    node.callee.name === "angularModule" &&
+    node.arguments.length > 0 &&
+    node.arguments[0].value === "ng"
+  );
 }
 
 function canBeModuleNameVariableDeclaration(node) {
-  return node.type === 'VariableDeclarator' && node.init && typeof node.init.value === 'string';
+  return (
+    node.type === "VariableDeclarator" &&
+    node.init &&
+    typeof node.init.value === "string"
+  );
 }
 
 module.exports = findDependencies;
-module.exports.isAngularModuleStatement = isAngularModuleStatement;
-module.exports.isNgModuleDeclaration = isNgModuleDeclaration;
