@@ -127,4 +127,9 @@ describe("findDependencies", function() {
     const source = "var el = <div>${product}</div>";
     findDependencies(source);
   });
+
+  it("should not crash on rest and spread properties", function() {
+    const source = "const { firstName, lastName, ...rest } = person;";
+    findDependencies(source);
+  });
 });
