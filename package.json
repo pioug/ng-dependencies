@@ -1,8 +1,8 @@
 {
   "name": "@pioug/ng-dependencies",
-  "version": "1.0.1",
+  "version": "2.0.0",
   "engines": {
-    "node": ">=0.10.0"
+    "node": ">=8.9.0"
   },
   "main": "index.js",
   "scripts": {

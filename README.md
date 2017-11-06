@@ -1,4 +1,4 @@
-#ng-dependencies
+# ng-dependencies
 
 > Analyze javascript code using [esprima](https://github.com/ariya/esprima) and return a list of objects representing the module dependencies in the code.
 
@@ -59,6 +59,8 @@ will output:
 ```
 
 ### Change log
+
+2.0.0 - use Babel parser; handle rest and spread properties
 
 1.0.1 - update Esprima; handle JSX syntax
 
