@@ -1,7 +1,7 @@
 'use strict';
 
-var esprima = require('esprima');
-var estraverse = require('estraverse');
+var babylon = require('babylon');
+var traverse = require('babel-traverse');
 var _ = require('lodash');
 
 function parseOptions(opts) {
@@ -18,9 +18,8 @@ function findDependencies(source, opts) {
   var rootDeps = [];
   var modules = {};
 
-  estraverse.traverse(esprima.parse(source, {sourceType: "module", jsx: true}), {
-    fallback: 'iteration',
-    leave: function(node, parent) {
+  traverse.default(babylon.parse(source, {sourceType: 'module', plugins: ['jsx']}), {
+    exit: function({ node, parent }) {
       if (canBeModuleNameVariableDeclaration(node)) {
         potentialModuleNameVariable[node.id.name] = node.init.value;
       }
