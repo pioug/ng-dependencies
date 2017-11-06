@@ -11,7 +11,7 @@ function findDependencies(source) {
 
   traverse.default(
     babylon.parse(source, {
-      plugins: ["jsx"],
+      plugins: ["jsx", "objectRestSpread"],
       sourceType: "module"
     }),
     {
